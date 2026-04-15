@@ -1,0 +1,7 @@
+# Fichiers IDE
+.idea/
+*.iml
+.vscode/
+
+# Variables d'environnement
+.env
