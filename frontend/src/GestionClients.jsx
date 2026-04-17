@@ -8,6 +8,12 @@ const fetchClients = async () => {
   return res.json();
 };
 
+const searchClientsAPI = async (query) => {
+  const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
+  if (!res.ok) throw new Error("Erreur de recherche");
+  return res.json();
+};
+
 const saveClient = async (client, isEdit) => {
   const url = isEdit ? `${API_BASE}/${client.id}` : API_BASE;
   // Envoyer seulement les champs attendus par le backend
@@ -71,30 +77,32 @@ export default function GestionClients() {
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await fetchClients();
+      const data = search.trim()
+        ? await searchClientsAPI(search.trim())
+        : await fetchClients();
       setClients(data);
     } catch {
       setGlobalError("Impossible de contacter le serveur. Vérifiez que Spring Boot tourne sur le port 8080.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [search]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      load();
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [load]);
 
   useEffect(() => {
     let result = clients;
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(c =>
-        (c.nom + " " + c.prenom + " " + c.email).toLowerCase().includes(q)
-      );
-    }
     if (segmentFilter !== "Tous") {
       result = result.filter(c => c.segment === segmentFilter);
     }
     setFiltered(result);
-  }, [clients, search, segmentFilter]);
+  }, [clients, segmentFilter]);
 
   const openAdd = () => {
     setFormData(EMPTY_FORM);
